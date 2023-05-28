@@ -356,8 +356,6 @@ bool readSensorNPN(int pin)
     }
 }
 
-
-
 void RunDispense()
 {
     switch (dispenseState)
@@ -399,15 +397,14 @@ void RunConveying()
         else
         {
             Conveyor.relayOn();
-            
         }
     }
 }
 
 void RunRotary()
 {
-   if (readSensorNPN(jar_sen) == 1)
-        {
+    if (readSensorNPN(jar_sen) == 1)
+    {
         if (initialMoveRotary == true)
         {
             if (readSensorPNP(volumetric_sen) == 1)
@@ -417,7 +414,7 @@ void RunRotary()
             else
             {
                 initialMoveRotary = false;
-            delay(300);
+                delay(300);
             }
         }
         else
@@ -427,15 +424,17 @@ void RunRotary()
                 dispenseState = 1;
                 initialMoveConveyor = true;
                 Rotary.relayOff();
-            delay(2000);
+                delay(2000);
             }
             else
             {
                 Rotary.relayOn();
             }
         }
-    }else{
-        dispenseState=1;
+    }
+    else
+    {
+        dispenseState = 1;
         Rotary.relayOff();
     }
 }
@@ -963,8 +962,8 @@ void setupJumper()
 
 void setup()
 {
-     encoder = new ClickEncoder(3, 2, 4); // Actual
-   // encoder = new ClickEncoder(3, 4, 2); // TestBench
+    encoder = new ClickEncoder(3, 2, 4); // Actual
+    // encoder = new ClickEncoder(3, 4, 2); // TestBench
     encoder->setAccelerationEnabled(false);
     Timer1.initialize(1000);
     Timer1.attachInterrupt(timerIsr);
@@ -989,8 +988,10 @@ void setup()
 
 void loop()
 {
-   Serial.print("Sensor Jar : "); Serial.println(readSensorPNP(jar_sen));
-   Serial.print("Sensor Volumetric : "); Serial.println(readSensorNPN(volumetric_sen));
+    Serial.print("Sensor Jar : ");
+    Serial.println(readSensorPNP(jar_sen));
+    Serial.print("Sensor Volumetric : ");
+    Serial.println(readSensorNPN(volumetric_sen));
     readRotaryEncoder();
     readButtonEncoder();
     inputCommands();
