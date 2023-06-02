@@ -4,6 +4,7 @@
 #include <LiquidCrystal_I2C.h>
 // Motor
 #include "control.h"
+#include "sensor.h"
 #include <AccelStepper.h>
 
 // Encoder
@@ -91,8 +92,8 @@ String TestMenuScreen[numOfTestMenu] = {
     "DISPENSING",
     "Back to Main Menu"};
 
-double parametersTimer[numOfSettingScreens] = {1, 1, 1, 1, 1, 1};
-double parametersTimerMaxValue[numOfSettingScreens] = {120, 120, 600, 120, 120, 120};
+double parametersTimer[numOfSettingScreens] = {7, 360, 150, 480, 7};
+double parametersTimerMaxValue[numOfSettingScreens] = {1200, 1200, 1200, 1200, 1200};
 
 int threshTimeAdd = 10;
 int feedTimeAdd = 20;
@@ -102,11 +103,11 @@ int grindTimeAdd = 50;
 
 void saveSettings()
 {
-    EEPROM.updateDouble(threshTimeAdd, parametersTimer[0]);
-    EEPROM.updateDouble(feedTimeAdd, parametersTimer[1]);
-    EEPROM.updateDouble(conveyorTimeAdd, parametersTimer[2]);
-    EEPROM.updateDouble(dryingTimeAdd, parametersTimer[3]);
-    EEPROM.updateDouble(grindTimeAdd, parametersTimer[4]);
+    EEPROM.writeDouble(threshTimeAdd, parametersTimer[0]);
+    EEPROM.writeDouble(feedTimeAdd, parametersTimer[1]);
+    EEPROM.writeDouble(conveyorTimeAdd, parametersTimer[2]);
+    EEPROM.writeDouble(dryingTimeAdd, parametersTimer[3]);
+    EEPROM.writeDouble(grindTimeAdd, parametersTimer[4]);
 }
 
 void loadSettings()
@@ -173,8 +174,11 @@ void setTimers()
 }
 
 // Sensor Variables
-const int volumetric_sen = 5;
-const int jar_sen = 6;
+// const int volumetric_sen = 5;
+// const int jar_sen = 6;
+
+sensor volumetric_sen(5, 1);
+sensor jar_sen(5, 1);
 
 int dispenseState = 0;
 bool initialMoveConveyor, initialMoveRotary = false;
@@ -326,8 +330,8 @@ void RunGrinder()
 
 void setSensors()
 {
-    pinMode(jar_sen, INPUT_PULLUP);
-    pinMode(volumetric_sen, INPUT_PULLUP);
+    // pinMode(jar_sen, INPUT_PULLUP);
+    // pinMode(volumetric_sen, INPUT_PULLUP);
 }
 
 bool readSensorPNP(int pin)
@@ -335,6 +339,7 @@ bool readSensorPNP(int pin)
     int result = digitalRead(pin);
     if (result == 1)
     {
+
         return true;
     }
     else
@@ -375,10 +380,9 @@ void RunConveying()
 {
     if (initialMoveConveyor == true)
     {
-        if (readSensorNPN(jar_sen) == 1)
+        if (jar_sen.getState() == 1)
         {
             Conveyor.relayOn();
-            delay(300);
         }
         else
         {
@@ -387,12 +391,11 @@ void RunConveying()
     }
     else
     {
-        if (readSensorNPN(jar_sen) == 1)
+        if (jar_sen.getState() == 1)
         {
             dispenseState = 2;
             initialMoveRotary = true;
             Conveyor.relayOff();
-            delay(300);
         }
         else
         {
@@ -403,23 +406,22 @@ void RunConveying()
 
 void RunRotary()
 {
-    if (readSensorNPN(jar_sen) == 1)
+    if (jar_sen.getState() == 1)
     {
         if (initialMoveRotary == true)
         {
-            if (readSensorPNP(volumetric_sen) == 1)
+            if (volumetric_sen.getState() == 1)
             {
                 Rotary.relayOn();
             }
             else
             {
                 initialMoveRotary = false;
-                delay(300);
             }
         }
         else
         {
-            if (readSensorPNP(volumetric_sen) == 1)
+            if (volumetric_sen.getState() == 1)
             {
                 dispenseState = 1;
                 initialMoveConveyor = true;
@@ -434,6 +436,7 @@ void RunRotary()
     }
     else
     {
+        initialMoveConveyor = true;
         dispenseState = 1;
         Rotary.relayOff();
     }
@@ -666,8 +669,8 @@ void inputCommands()
             if (currentSettingScreen == numOfSettingScreens - 1)
             {
                 settingsFlag = false;
-                saveSettings();
-                loadSettings();
+                // saveSettings();
+                // loadSettings();
                 setTimers();
                 currentSettingScreen = 0;
             }
@@ -980,7 +983,7 @@ void setup()
     Serial.begin(9600);
 
     // saveSettings(); // Disable upon Initialiaze
-    loadSettings();
+    // loadSettings();
     setTimers();
     setStepper();
     setSensors();
@@ -988,15 +991,14 @@ void setup()
 
 void loop()
 {
-    Serial.print("Sensor Jar : ");
-    Serial.println(readSensorPNP(jar_sen));
-    Serial.print("Sensor Volumetric : ");
-    Serial.println(readSensorNPN(volumetric_sen));
+
     readRotaryEncoder();
     readButtonEncoder();
     inputCommands();
     stepConveyor.run();
-
+    volumetric_sen.update();
+    jar_sen.update();
+    
     if (refreshScreen == true)
     {
         printScreen();
